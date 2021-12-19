@@ -20,12 +20,19 @@ def get_context(length, lineno, doc):
 
     source_context = []
     target_context = []
-    while context_line >= 1:
+    while context_line >= 1 and len(" ".join(source_context).split()) <= length:
         source_context.insert(0, doc[0][context_line-1])
         target_context.insert(0, doc[1][context_line-1])
         context_line -= 1
 
     return source_context, target_context
+
+
+def stripread(fh):
+    lines = []
+    for line in fh:
+        lines.append(line.rstrip("\r\n"))
+    return lines
 
 
 def main(args):
@@ -39,7 +46,7 @@ def main(args):
                 t_file = os.path.abspath(os.path.join(args.dir, subfolder, target_file))
 
                 with open(s_file) as sfh, open(t_file) as tfh:
-                    filenames[target_file] = (sfh.readlines(), tfh.readlines())
+                    filenames[target_file] = (stripread(sfh), stripread(tfh))
 
     jsondata = json.load(open(args.json_file))
     print(f"src-trg sentence pairs = {len(jsondata)}", file=sys.stderr)
