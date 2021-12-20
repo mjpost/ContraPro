@@ -48,6 +48,14 @@ Extract raw text (plus context) for the ContraPro test set. Note that you can ch
 
     perl conversion_scripts/json2text_and_context.pl --source en --target de --dir \
     [/path/to/OpenSubtitles_with_document_splitting, e.g. "documents"] --json contrapro.json --context 1
+    
+Or use the Python script, which generates n-n source-target pairs, tab-delimited, on STDOUT (e.g., for use with `marian-scorer`):
+
+    # context + sentence pair max 250 tokens with SPM
+    python3 conversion_scripts/json2text.py --dir /path/to/opensubtitles/dir -m 250 --spm /path/to/spm model
+
+    # context 1 sentence
+    python3 conversion_scripts/json2text.py --dir /path/to/opensubtitles/dir -m 1 --count-sents
 
 The previous step will produce 4 files:
 
@@ -70,11 +78,11 @@ Mathias Müller; Annette Rios; Elena Voita; Rico Sennrich (2018). A Large-Scale 
 
 ```
 @inproceedings{mueller2018,
-address = "Brussels, Belgium",
-author = "M{\"u}ller, Mathias and Rios, Annette and Voita, Elena and Sennrich, Rico",
-booktitle = "{WMT 2018}",
-publisher = "Association for Computational Linguistics",
-title = "{A Large-Scale Test Set for the Evaluation of Context-Aware Pronoun Translation in Neural Machine Translation}",
-year = "2018"
+  address = "Brussels, Belgium",
+  author = "M{\"u}ller, Mathias and Rios, Annette and Voita, Elena and Sennrich, Rico",
+  booktitle = "{WMT 2018}",
+  publisher = "Association for Computational Linguistics",
+  title = "{A Large-Scale Test Set for the Evaluation of Context-Aware Pronoun Translation in Neural Machine Translation}",
+  year = "2018"
 }
 ```
