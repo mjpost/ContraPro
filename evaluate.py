@@ -15,7 +15,7 @@ from operator import gt, lt
 import scipy
 import scipy.stats
 
-# usage: python evaluate.py errors.json < scores
+# usage: python evaluate.py --reference contrapro.json --scores [/path/to/your/scores]
 # by default, lower scores (closer to zero for log-prob) are better
 
 def count_errors(reference, scores, maximize, verbose=False):
@@ -34,13 +34,13 @@ def count_errors(reference, scores, maximize, verbose=False):
     else:
         better = lt
 
-    readlines =0
+    readlines = 0
 
     for count, sentence in enumerate(reference):
         #print(count)
-        score = float(scores.readline())
+        score = float(scores.readline().split()[0])
 
-        readlines +=1
+        readlines += 1
 
         all_better = True
 
@@ -54,7 +54,7 @@ def count_errors(reference, scores, maximize, verbose=False):
         intrasegmental = sentence['intrasegmental'] ## can be true, false or null (in this case will be returned as None)
         results['by_intrasegmental'][intrasegmental]['total'] +=1
         for error in sentence['errors']:
-            errorscore = float(scores.readline())
+            errorscore = float(scores.readline().split()[0])
             readlines +=1
             if not better(score, errorscore):
                     all_better = False
@@ -77,7 +77,8 @@ def count_errors(reference, scores, maximize, verbose=False):
                 print("ref ante: {}".format(sentence["ref ante phrase"]))
                 print()
 
-    return results 
+    return results
+
 
 def get_scores(category):
     correct = category['correct']
@@ -87,7 +88,6 @@ def get_scores(category):
     else:
         accuracy = 0
     return correct, total, accuracy
-
 
 
 def print_statistics(results):
@@ -104,6 +104,7 @@ def print_statistics_by_category(results):
         if total:
             print('{0} : {1} {2} {3}'.format(category, correct, total, accuracy))
 
+
 def print_statistics_by_intrasegmental(results):
 
     for intrasegmental in sorted(results['by_intrasegmental']):
@@ -111,12 +112,14 @@ def print_statistics_by_intrasegmental(results):
         if total:
             print('{0} : {1} {2} {3} '.format(intrasegmental, correct, total, accuracy))
 
+
 def print_statistics_by_distance(results):
 
     for distance in sorted(results['by_ante_distance']):
         correct, total, accuracy = get_scores(results['by_ante_distance'][distance])
         if total:
             print('{0} : {1} {2} {3} '.format(distance, correct, total, accuracy))
+
 
 def print_ante_distance_stats(results):
 
@@ -127,6 +130,7 @@ def print_ante_distance_stats(results):
             if total:
                 print('{} {} '.format(category, total))
 
+
 def main(reference, scores, maximize, verbose):
 
     results = count_errors(reference, scores, maximize, verbose )
@@ -135,21 +139,22 @@ def main(reference, scores, maximize, verbose):
     print()
     print('statistics by error category')
     print_statistics_by_category(results)
-    print()  
+    print()
     print('statistics by intrasegmental')
     print_statistics_by_intrasegmental(results)
-    print() 
+    print()
     print('statistics by ante distance')
     print_statistics_by_distance(results)
-    print() 
+    print()
     print('ante distance per pronoun pairs')
     print_ante_distance_stats(results)
+
 
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--verbose', '-v', action="store_true", help="verbose mode (prints out all wrong classifications)")
-    parser.add_argument('--maximize', action="store_true", help="Use for model where higher means better (probability; log-likelhood). By default, script assumes lower is better (negative log-likelihood).")
+    parser.add_argument('--maximize', '--gt', action="store_true", help="Use for model where higher means better (probability; log-likelhood). By default, script assumes lower is better (negative log-likelihood).")
     parser.add_argument('--reference', '-r', type=argparse.FileType('r'),
                         required=True, metavar='PATH',
                         help="Reference JSON file")
