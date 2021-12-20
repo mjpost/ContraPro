@@ -29,7 +29,7 @@ And if a translation model gives lower scores to those _contrastive_ pairs, as i
     ("Say, if you get near a song, play it.", "Wenn Ihnen ein Song über den Weg läuft, spielen Sie es einfach.") -> 0.0043
 
 We refer to this as a "correct decision" by the model. If this happens consistently, we conclude that the model can
-discriminate between good and bad translations. 
+discriminate between good and bad translations.
 
 
 Usage Instructions
