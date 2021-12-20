@@ -5,14 +5,10 @@ import re
 import sys
 import json
 
-# sub noWS{
-#  my $string = $_[0];
-#  return $string =~ s/\s\t\n//g;
-# }
-
 
 def noWS(s):
-    return re.sub(r"\s\t\n", "", s)
+    """Removes all whitespace for an easy comparison"""
+    return re.sub(r'[\s\t\n"`´\']', "", s)
 
 
 def get_context(is_too_long, lineno, doc):
@@ -74,11 +70,15 @@ def main(args):
         target = filenames[filename][1][lineno-1].strip("\r\n")
 
         if source and noWS(source) != noWS(sentence["src segment"]):
-            print(f"Fatal: bad source", file=sys.stderr)
-            sys.exit(1)
+            print(f"Warning: bad source in", filename, "line", lineno, file=sys.stderr)
+            print("-> file: ", noWS(source), file=sys.stderr)
+            print("-> json: ", noWS(sentence["src segment"]), file=sys.stderr)
 
         def is_too_long(context):
-            if spm:
+            """Determine if the context is too long."""
+            if args.count_sents:
+                return len(context) > args.max_length
+            elif spm:
                 return sum([len(x) for x in spm.encode(context + [source])]) > args.max_length
             else:
                 return sum([len(x.split()) for x in context + [source]]) > args.max_length
@@ -100,7 +100,8 @@ if __name__ == "__main__":
     parser.add_argument("-s", "--source", default="en")
     parser.add_argument("-t", "--target", default="de")
     parser.add_argument("-d", "--dir", default="documents")
-    parser.add_argument("-m", "--max-length", type=int, default=250)
+    parser.add_argument("--count-sents", action="store_true", help="Cap context by # sents instead of # tokens")
+    parser.add_argument("-m", "--max-length", type=int, default=0)
     parser.add_argument("--separator", default=" <eos> ")
     parser.add_argument("--spm")
     parser.add_argument("json_file")
