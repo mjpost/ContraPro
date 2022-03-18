@@ -12,6 +12,8 @@ def noWS(s):
 
 
 def get_context(is_too_long, lineno, doc):
+    """Builds the context backwards, calling {is_too_long} to determine when to stop."""
+
     context_line = lineno - 1
 
     source_context = []
@@ -57,6 +59,15 @@ def main(args):
     jsondata = json.load(open(args.json_file))
     print(f"src-trg sentence pairs = {len(jsondata)}", file=sys.stderr)
 
+    def is_too_long(context):
+        """Determine if the context is too long."""
+        if args.count_sents:
+            return len(context) > args.max_length
+        elif spm:
+            return sum([len(x) for x in spm.encode(context + [source])]) > args.max_length
+        else:
+            return sum([len(x.split()) for x in context + [source]]) > args.max_length
+
     for sentence in jsondata:
         filename = sentence["document id"]
 
@@ -74,24 +85,18 @@ def main(args):
             print("-> file: ", noWS(source), file=sys.stderr)
             print("-> json: ", noWS(sentence["src segment"]), file=sys.stderr)
 
-        def is_too_long(context):
-            """Determine if the context is too long."""
-            if args.count_sents:
-                return len(context) > args.max_length
-            elif spm:
-                return sum([len(x) for x in spm.encode(context + [source])]) > args.max_length
-            else:
-                return sum([len(x.split()) for x in context + [source]]) > args.max_length
-
         source_context, target_context = get_context(is_too_long, lineno, filenames[filename])
         source_line = args.separator.join(source_context + [source])
         target_line = args.separator.join(target_context + [target])
-        print(source_line, target_line, sep="\t")
 
+        # {'ante distance': 0, 'ref pronoun': 'es', 'src pronoun': 'it', 'corpus': 'opensubs1921-ende', 'document id': '1921_12806_3712161.de', 'errors': [{'contrastive': 'Jetzt hast du mich mit deiner Erzählung aber neugierig gemacht, und ich bin gespannt zu hören, wie sie weiterging!', 'replacement': 'sie', 'replacement gender': 'Fem', 'type': 'pronominal coreference'}, {'contrastive': 'Jetzt hast du mich mit deiner Erzählung aber neugierig gemacht, und ich bin gespannt zu hören, wie er weiterging!', 'replacement': 'er', 'replacement gender': 'Masc', 'type': 'pronominal coreference'}], 'intrasegmental': True, 'ref ante head': None, 'ref ante head gender': None, 'ref ante head id': None, 'ref ante head lemma': None, 'ref ante head morpho': None, 'ref ante head pos': None, 'ref ante phrase': None, 'ref segment': 'Jetzt hast du mich mit deiner Erzählung aber neugierig gemacht, und ich bin gespannt zu hören, wie es weiterging!', 'segment id': 70, 'src ante head': 'story', 'src ante head gender': None, 'src ante head id': 9, 'src ante head lemma': 'story', 'src ante head morpho': None, 'src ante head pos': 'NN', 'src ante phrase': 'your story', 'src segment': "You have made me very curious about your story and I can't wait to hear how it continues!"}
+        distance = sentence["ante distance"]
+
+        print(distance, "correct", ref_prn, source_line, target_line, sep="\t")
         for error in sentence["errors"]:
             contrastive = error["contrastive"]
             target_line = args.separator.join(target_context + [contrastive])
-            print(source_line, target_line, sep="\t")
+            print(distance, "contrastive", error["replacement"], source_line, target_line, sep="\t")
 
 
 if __name__ == "__main__":

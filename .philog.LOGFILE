@@ -1,3 +1,4 @@
 2021-12-19 01:30:24 /home/mattpost/src/ContraPro perl conversion_scripts/json2text_and_context.pl --source en --target de --dir documents --json contrapro.json --context 1
 2021-12-19 01:34:13 /home/mattpost/src/ContraPro ./conversion_scripts/json2text.py contrapro.json 
 2021-12-19 03:40:48 /home/mattpost/src/ContraPro ./conversion_scripts/json2text.py contrapro.json -m 250 --spm /mnt/mattpost/exp/2021.docmt/polonium/en-de/t2/data/*spm | tee t | head
+2022-03-18 16:47:27 /home/mattpost/src/ContraPro ./conversion_scripts/json2text.py contrapro.json -m 250 --spm /mnt/mattpost/exp/2021.docmt/polonium/en-de/t2/data/enu.deu.joint.eos.spm > contrapro.en-de.tsv
