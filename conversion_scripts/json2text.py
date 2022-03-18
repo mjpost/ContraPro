@@ -59,15 +59,6 @@ def main(args):
     jsondata = json.load(open(args.json_file))
     print(f"src-trg sentence pairs = {len(jsondata)}", file=sys.stderr)
 
-    def is_too_long(context):
-        """Determine if the context is too long."""
-        if args.count_sents:
-            return len(context) > args.max_length
-        elif spm:
-            return sum([len(x) for x in spm.encode(context + [source])]) > args.max_length
-        else:
-            return sum([len(x.split()) for x in context + [source]]) > args.max_length
-
     for sentence in jsondata:
         filename = sentence["document id"]
 
@@ -79,6 +70,17 @@ def main(args):
         lineno = int(sentence["segment id"])
         source = filenames[filename][0][lineno-1].strip("\r\n")
         target = filenames[filename][1][lineno-1].strip("\r\n")
+
+        def is_too_long(context):
+            """Determine if the context is too long. Remember to count the <eos> tokens."""
+            if args.count_sents:
+                return len(context) > args.max_length
+            elif spm:
+                length = len(spm.encode(args.separator.join(context + [source])))
+                return length > args.max_length
+            else:
+                length = len(args.separator.join(context + [source]).split())
+                return length > args.max_length
 
         if source and noWS(source) != noWS(sentence["src segment"]):
             print(f"Warning: bad source in", filename, "line", lineno, file=sys.stderr)
