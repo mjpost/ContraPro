@@ -57,7 +57,7 @@ def main(args):
                     filenames[target_file] = (stripread(sfh), stripread(tfh))
 
     jsondata = json.load(open(args.json_file))
-    print(f"src-trg sentence pairs = {len(jsondata)}", file=sys.stderr)
+    # print(f"src-trg sentence pairs = {len(jsondata)}", file=sys.stderr)
 
     for sentence in jsondata:
         filename = sentence["document id"]
@@ -73,14 +73,13 @@ def main(args):
 
         def is_too_long(context):
             """Determine if the context is too long. Remember to count the <eos> tokens."""
-            if args.count_sents:
-                return len(context) > args.max_length
-            elif spm:
+            length = 0
+            if spm:
                 length = len(spm.encode(args.separator.join(context + [source])))
-                return length > args.max_length
             else:
                 length = len(args.separator.join(context + [source]).split())
-                return length > args.max_length
+
+            return length > args.max_tokens or (args.max_sents > 0 and len(context) > args.max_sents)
 
         if source and noWS(source) != noWS(sentence["src segment"]):
             print(f"Warning: bad source in", filename, "line", lineno, file=sys.stderr)
@@ -107,8 +106,8 @@ if __name__ == "__main__":
     parser.add_argument("-s", "--source", default="en")
     parser.add_argument("-t", "--target", default="de")
     parser.add_argument("-d", "--dir", default="documents")
-    parser.add_argument("--count-sents", action="store_true", help="Cap context by # sents instead of # tokens")
-    parser.add_argument("-m", "--max-length", type=int, default=0)
+    parser.add_argument("--max-sents", "-ms", type=int, default=0, help="Maximum number of context sentences")
+    parser.add_argument("--max-tokens", "-m", type=int, default=0, help="Maximum length in subword tokens")
     parser.add_argument("--separator", default=" <eos> ")
     parser.add_argument("--spm")
     parser.add_argument("json_file")
