@@ -15,10 +15,12 @@ from operator import gt, lt
 import scipy
 import scipy.stats
 
+ALL_PRONOUNS = ["sie", "er", "es"]
+
 # usage: python evaluate.py --reference contrapro.json --scores [/path/to/your/scores]
 # by default, lower scores (closer to zero for log-prob) are better
 
-def count_errors(reference, scores, maximize, verbose=False):
+def count_errors(reference, scores, maximize, verbose=False, pronouns=ALL_PRONOUNS):
     """read in scores file and count number of correct decisions"""
 
     reference = json.load(reference)
@@ -43,6 +45,10 @@ def count_errors(reference, scores, maximize, verbose=False):
         readlines += 1
 
         all_better = True
+
+        ref_pronoun = sentence['ref pronoun'].lower()
+        if ref_pronoun not in args.pronouns:
+            continue
 
         category = sentence['src pronoun'].lower() + ":" + sentence['ref pronoun'].lower()
         results['by_category'][category]['total'] += 1
@@ -131,9 +137,8 @@ def print_ante_distance_stats(results):
                 print('{} {} '.format(category, total))
 
 
-def main(reference, scores, maximize, verbose):
-
-    results = count_errors(reference, scores, maximize, verbose )
+def main(args):
+    results = count_errors(args.reference, args.scores, args.maximize, args.verbose, args.pronouns)
 
     print_statistics(results)
     print()
@@ -161,6 +166,8 @@ if __name__ == '__main__':
     parser.add_argument('--scores', '-s', type=argparse.FileType('r'),
                         default=sys.stdin, metavar='PATH',
                         help="File with scores (one per line)")
+    parser.add_argument("--pronouns", "-p", nargs="+", default=ALL_PRONOUNS,
+                        help="Limit stats to just the selected pronouns")
 
     args = parser.parse_args()
 
@@ -169,4 +176,4 @@ if __name__ == '__main__':
 
     #enc = sys.getdefaultencoding()
     #print('enc:', enc)
-    main(args.reference, args.scores, args.maximize, args.verbose)
+    main(args)
