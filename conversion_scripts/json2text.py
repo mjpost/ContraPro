@@ -61,6 +61,8 @@ def main(args):
 
     for sentence in jsondata:
         filename = sentence["document id"]
+        if not filename.endswith(f".{args.target}"):
+            filename += "." + args.target
 
         if not filename in filenames:
             print("Fatal: missing file: {filename}", file=sys.stderr)
@@ -68,8 +70,10 @@ def main(args):
         ref_prn = sentence["ref pronoun"].lower()
 
         lineno = int(sentence["segment id"])
-        source = filenames[filename][0][lineno-1].strip("\r\n")
-        target = filenames[filename][1][lineno-1].strip("\r\n")
+        if not args.zero:
+            lineno -= 1
+        source = filenames[filename][0][lineno].strip("\r\n")
+        target = filenames[filename][1][lineno].strip("\r\n")
 
         def is_too_long(context):
             """Determine if the context is too long. Remember to count the <eos> tokens."""
@@ -110,6 +114,7 @@ if __name__ == "__main__":
     parser.add_argument("--max-tokens", "-m", type=int, default=0, help="Maximum length in subword tokens")
     parser.add_argument("--separator", default=" <eos> ")
     parser.add_argument("--spm")
+    parser.add_argument("--zero", "-0", action="store_true", help="index from 0")
     parser.add_argument("json_file")
     args = parser.parse_args()
 
