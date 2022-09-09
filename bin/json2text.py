@@ -18,9 +18,9 @@ def get_context(is_too_long, lineno, doc):
 
     source_context = []
     target_context = []
-    while context_line >= 1:
-        source_context.insert(0, doc[0][context_line-1])
-        target_context.insert(0, doc[1][context_line-1])
+    while context_line >= 0:
+        source_context.insert(0, doc[0][context_line])
+        target_context.insert(0, doc[1][context_line])
         if is_too_long(source_context):
             source_context.pop(0)
             target_context.pop(0)
