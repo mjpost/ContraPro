@@ -11,24 +11,43 @@ def noWS(s):
     return re.sub(r'[\s\t\n"`´\']', "", s)
 
 
-def get_context(is_too_long, lineno, doc):
-    """Builds the context backwards, calling {is_too_long} to determine when to stop."""
-
+def build_doc(is_too_long, lineno, doc, num_before=None):
+    """Create the document instance from previous and future sentences.
+    If num_before is not None, use only num_before lines as preceding context (the rest as future).
+    """
     context_line = lineno - 1
 
-    source_context = []
-    target_context = []
-    while context_line >= 0:
-        source_context.insert(0, doc[0][context_line])
-        target_context.insert(0, doc[1][context_line])
-        if is_too_long(source_context):
-            source_context.pop(0)
-            target_context.pop(0)
+    source_doc = [doc[0][lineno]]
+    target_doc = [doc[1][lineno]]
+
+    # Add previous context, up to space (is_too_long) and permission (num_before)
+    while context_line >= 0 and (num_before is None or num_before > 0):
+        source_doc.insert(0, doc[0][context_line])
+        target_doc.insert(0, doc[1][context_line])
+        if is_too_long(source_doc):
+            source_doc.pop(0)
+            target_doc.pop(0)
             break
 
         context_line -= 1
 
-    return source_context, target_context
+        if num_before is not None:
+            num_before -= 1
+
+    # If permitted, add future context, up to space
+    if num_before is not None:
+        context_line = lineno + 1
+        while context_line < len(doc[0]):
+            source_doc.append(doc[0][context_line])
+            target_doc.append(doc[1][context_line])
+            if is_too_long(source_doc):
+                source_doc.pop()
+                target_doc.pop()
+                break
+
+            context_line += 1
+
+    return source_doc, target_doc
 
 
 def stripread(fh):
@@ -76,12 +95,14 @@ def main(args):
         target = filenames[filename][1][lineno].strip("\r\n")
 
         def is_too_long(context):
-            """Determine if the context is too long. Remember to count the <eos> tokens."""
+            """Return True if the context + source sentence is too long."""
             length = 0
             if spm:
                 length = len(spm.encode(args.separator.join(context + [source])))
+                # print(length, spm.encode(args.separator.join(context + [source])))
             else:
                 length = len(args.separator.join(context + [source]).split())
+                # print(length, args.separator.join(context + [source]).split())
 
             return length > args.max_tokens or (args.max_sents > 0 and len(context) > args.max_sents)
 
@@ -90,18 +111,20 @@ def main(args):
             print("-> file: ", noWS(source), file=sys.stderr)
             print("-> json: ", noWS(sentence["src segment"]), file=sys.stderr)
 
-        source_context, target_context = get_context(is_too_long, lineno, filenames[filename])
-        source_line = args.separator.join(source_context + [source])
-        target_line = args.separator.join(target_context + [target])
+        source_lines, target_lines = build_doc(is_too_long, lineno, filenames[filename], num_before=args.num_before)
 
         # {'ante distance': 0, 'ref pronoun': 'es', 'src pronoun': 'it', 'corpus': 'opensubs1921-ende', 'document id': '1921_12806_3712161.de', 'errors': [{'contrastive': 'Jetzt hast du mich mit deiner Erzählung aber neugierig gemacht, und ich bin gespannt zu hören, wie sie weiterging!', 'replacement': 'sie', 'replacement gender': 'Fem', 'type': 'pronominal coreference'}, {'contrastive': 'Jetzt hast du mich mit deiner Erzählung aber neugierig gemacht, und ich bin gespannt zu hören, wie er weiterging!', 'replacement': 'er', 'replacement gender': 'Masc', 'type': 'pronominal coreference'}], 'intrasegmental': True, 'ref ante head': None, 'ref ante head gender': None, 'ref ante head id': None, 'ref ante head lemma': None, 'ref ante head morpho': None, 'ref ante head pos': None, 'ref ante phrase': None, 'ref segment': 'Jetzt hast du mich mit deiner Erzählung aber neugierig gemacht, und ich bin gespannt zu hören, wie es weiterging!', 'segment id': 70, 'src ante head': 'story', 'src ante head gender': None, 'src ante head id': 9, 'src ante head lemma': 'story', 'src ante head morpho': None, 'src ante head pos': 'NN', 'src ante phrase': 'your story', 'src segment': "You have made me very curious about your story and I can't wait to hear how it continues!"}
         distance = sentence["ante distance"]
 
+        source_line = args.separator.join(source_lines)
+        target_line = args.separator.join(target_lines)
+
         print(distance, "correct", ref_prn, source_line, target_line, sep="\t")
         if not args.correct_only:
             for error in sentence["errors"]:
-                contrastive = error["contrastive"]
-                target_line = args.separator.join(target_context + [contrastive])
+                target_index = -1 if args.num_before is None else min(args.num_before, len(target_lines) - 1)
+                target_lines[target_index] = error["contrastive"]
+                target_line = args.separator.join(target_lines)
                 print(distance, "contrastive", error["replacement"], source_line, target_line, sep="\t")
 
 
@@ -110,11 +133,12 @@ if __name__ == "__main__":
 
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument("-s", "--source", default="en")
-    parser.add_argument("-t", "--target", default="de")
-    parser.add_argument("-d", "--dir", default=os.path.join(BASEDIR, "documents"))
+    parser.add_argument("--source", "-s", default="en")
+    parser.add_argument("--target", "-t", default="de")
+    parser.add_argument("--dir", "-d", default=os.path.join(BASEDIR, "documents"))
     parser.add_argument("--max-sents", "-ms", type=int, default=0, help="Maximum number of context sentences")
     parser.add_argument("--max-tokens", "-m", type=int, default=0, help="Maximum length in subword tokens")
+    parser.add_argument("--num-before", "-n", type=int, default=None, help="Num sentences previous context")
     parser.add_argument("--separator", default=" <eos> ")
     parser.add_argument("--spm")
     parser.add_argument("--zero", "-0", action="store_true", help="indices are already zeroed (French)")
