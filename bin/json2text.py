@@ -98,10 +98,11 @@ def main(args):
         distance = sentence["ante distance"]
 
         print(distance, "correct", ref_prn, source_line, target_line, sep="\t")
-        for error in sentence["errors"]:
-            contrastive = error["contrastive"]
-            target_line = args.separator.join(target_context + [contrastive])
-            print(distance, "contrastive", error["replacement"], source_line, target_line, sep="\t")
+        if not args.correct_only:
+            for error in sentence["errors"]:
+                contrastive = error["contrastive"]
+                target_line = args.separator.join(target_context + [contrastive])
+                print(distance, "contrastive", error["replacement"], source_line, target_line, sep="\t")
 
 
 if __name__ == "__main__":
@@ -116,7 +117,8 @@ if __name__ == "__main__":
     parser.add_argument("--max-tokens", "-m", type=int, default=0, help="Maximum length in subword tokens")
     parser.add_argument("--separator", default=" <eos> ")
     parser.add_argument("--spm")
-    parser.add_argument("--zero", "-0", action="store_true", help="index from 0")
+    parser.add_argument("--zero", "-0", action="store_true", help="indices are already zeroed (French)")
+    parser.add_argument("--correct-only", action="store_true", help="only output correct lines")
     parser.add_argument("--json-file", "-j", default=os.path.join(BASEDIR, "contrapro.json"))
     args = parser.parse_args()
 
