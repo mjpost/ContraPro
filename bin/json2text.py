@@ -105,17 +105,19 @@ def main(args):
 
 
 if __name__ == "__main__":
+    BASEDIR = os.path.join(os.path.dirname(__file__), "..")
+
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("-s", "--source", default="en")
     parser.add_argument("-t", "--target", default="de")
-    parser.add_argument("-d", "--dir", default="documents")
+    parser.add_argument("-d", "--dir", default=os.path.join(BASEDIR, "documents"))
     parser.add_argument("--max-sents", "-ms", type=int, default=0, help="Maximum number of context sentences")
     parser.add_argument("--max-tokens", "-m", type=int, default=0, help="Maximum length in subword tokens")
     parser.add_argument("--separator", default=" <eos> ")
     parser.add_argument("--spm")
     parser.add_argument("--zero", "-0", action="store_true", help="index from 0")
-    parser.add_argument("json_file")
+    parser.add_argument("--json-file", "-j", default=os.path.join(BASEDIR, "contrapro.json"))
     args = parser.parse_args()
 
     main(args)
