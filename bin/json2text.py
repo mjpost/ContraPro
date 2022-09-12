@@ -94,17 +94,17 @@ def main(args):
         source = filenames[filename][0][lineno].strip("\r\n")
         target = filenames[filename][1][lineno].strip("\r\n")
 
-        def is_too_long(context):
+        def is_too_long(source_doc):
             """Return True if the context + source sentence is too long."""
             length = 0
             if spm:
-                length = len(spm.encode(args.separator.join(context + [source])))
+                length = len(spm.encode(args.separator.join(source_doc)))
                 # print(length, spm.encode(args.separator.join(context + [source])))
             else:
-                length = len(args.separator.join(context + [source]).split())
+                length = len(args.separator.join(source_doc).split())
                 # print(length, args.separator.join(context + [source]).split())
 
-            return length > args.max_tokens or (args.max_sents > 0 and len(context) > args.max_sents)
+            return (args.max_tokens > 0 and length > args.max_tokens) or (args.max_sents > 0 and len(source_doc) - 1 > args.max_sents)
 
         if source and noWS(source) != noWS(sentence["src segment"]):
             print(f"Warning: bad source in", filename, "line", lineno, file=sys.stderr)
