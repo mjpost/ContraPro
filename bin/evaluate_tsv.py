@@ -41,7 +41,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("infile", nargs="?", type=argparse.FileType("r"), default=sys.stdin)
-    parser.add_argument("--separator", default=" <eos> ")
+    parser.add_argument("--separator", default="<eos>")
     parser.add_argument("--distance", "-d", nargs=2, default=[0, 100], type=int)
     parser.add_argument("--pronouns", "-p", nargs="+", default=[], choices="all er es sie".split())
     parser.add_argument("--debug", action="store_true")
