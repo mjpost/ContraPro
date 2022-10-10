@@ -11,9 +11,16 @@ def noWS(s):
     return re.sub(r'[\s\t\n"`´\']', "", s)
 
 
-def build_doc(is_too_long, lineno, doc, num_before=None):
+def build_doc(is_too_long, count_tokens, lineno, doc, tokens_before=None, num_before=None):
     """Create the document instance from previous and future sentences.
     If num_before is not None, use only num_before lines as preceding context (the rest as future).
+
+    :param is_too_long: The function to call to see if the line is too long
+    :param count_tokens: Inelegant second function that counts tokens
+    :param lineno: The line number (zero-indexed)
+    :param doc: the document
+    :param num_before: The number of context sentences to put before (None=infinite)
+    :return:
     """
     context_line = lineno - 1
 
@@ -21,7 +28,14 @@ def build_doc(is_too_long, lineno, doc, num_before=None):
     target_doc = [doc[1][lineno]]
 
     # Add previous context, up to space (is_too_long) and permission (num_before)
+    added_tokens = 0
     while context_line >= 0 and (num_before is None or num_before > 0):
+        if tokens_before is not None:
+            # Don't add the line if it won't fit
+            added_tokens += count_tokens(doc[0][context_line])
+            if added_tokens > tokens_before:
+                break
+
         source_doc.insert(0, doc[0][context_line])
         target_doc.insert(0, doc[1][context_line])
         if is_too_long(source_doc):
@@ -33,6 +47,8 @@ def build_doc(is_too_long, lineno, doc, num_before=None):
 
         if num_before is not None:
             num_before -= 1
+
+    index = len(source_doc) - 1
 
     # If permitted, add future context, up to space
     if num_before is not None:
@@ -47,7 +63,7 @@ def build_doc(is_too_long, lineno, doc, num_before=None):
 
             context_line += 1
 
-    return source_doc, target_doc
+    return source_doc, target_doc, index
 
 
 def stripread(fh):
@@ -94,16 +110,20 @@ def main(args):
         source = filenames[filename][0][lineno].strip("\r\n")
         target = filenames[filename][1][lineno].strip("\r\n")
 
-        def is_too_long(source_doc):
-            """Return True if the context + source sentence is too long."""
-            length = 0
+        def count_tokens(line):
+            if type(line) == str:
+                line = [line]
+
             if spm:
-                length = len(spm.encode(args.separator.join(source_doc)))
+                return len(spm.encode(args.separator.join(line)))
                 # print(length, spm.encode(args.separator.join(context + [source])))
             else:
-                length = len(args.separator.join(source_doc).split())
+                return len(args.separator.join(line).split())
                 # print(length, args.separator.join(context + [source]).split())
 
+        def is_too_long(source_doc):
+            """Return True if the context + source sentence is too long."""
+            length = count_tokens(source_doc)
             return (args.max_tokens > 0 and length > args.max_tokens) or (args.max_sents > 0 and len(source_doc) - 1 > args.max_sents)
 
         if source and noWS(source) != noWS(sentence["src segment"]):
@@ -111,7 +131,7 @@ def main(args):
             print("-> file: ", noWS(source), file=sys.stderr)
             print("-> json: ", noWS(sentence["src segment"]), file=sys.stderr)
 
-        source_lines, target_lines = build_doc(is_too_long, lineno, filenames[filename], num_before=args.num_before)
+        source_lines, target_lines, target_index = build_doc(is_too_long, count_tokens, lineno, filenames[filename], num_before=args.sents_before, tokens_before=args.tokens_before)
 
         # {'ante distance': 0, 'ref pronoun': 'es', 'src pronoun': 'it', 'corpus': 'opensubs1921-ende', 'document id': '1921_12806_3712161.de', 'errors': [{'contrastive': 'Jetzt hast du mich mit deiner Erzählung aber neugierig gemacht, und ich bin gespannt zu hören, wie sie weiterging!', 'replacement': 'sie', 'replacement gender': 'Fem', 'type': 'pronominal coreference'}, {'contrastive': 'Jetzt hast du mich mit deiner Erzählung aber neugierig gemacht, und ich bin gespannt zu hören, wie er weiterging!', 'replacement': 'er', 'replacement gender': 'Masc', 'type': 'pronominal coreference'}], 'intrasegmental': True, 'ref ante head': None, 'ref ante head gender': None, 'ref ante head id': None, 'ref ante head lemma': None, 'ref ante head morpho': None, 'ref ante head pos': None, 'ref ante phrase': None, 'ref segment': 'Jetzt hast du mich mit deiner Erzählung aber neugierig gemacht, und ich bin gespannt zu hören, wie es weiterging!', 'segment id': 70, 'src ante head': 'story', 'src ante head gender': None, 'src ante head id': 9, 'src ante head lemma': 'story', 'src ante head morpho': None, 'src ante head pos': 'NN', 'src ante phrase': 'your story', 'src segment': "You have made me very curious about your story and I can't wait to hear how it continues!"}
         distance = sentence["ante distance"]
@@ -119,13 +139,12 @@ def main(args):
         source_line = args.separator.join(source_lines)
         target_line = args.separator.join(target_lines)
 
-        print(distance, "correct", ref_prn, source_line, target_line, sep="\t")
+        print(target_index, distance, "correct", ref_prn, source_line, target_line, sep="\t")
         if not args.correct_only:
             for error in sentence["errors"]:
-                target_index = -1 if args.num_before is None else min(args.num_before, len(target_lines) - 1)
                 target_lines[target_index] = error["contrastive"]
                 target_line = args.separator.join(target_lines)
-                print(distance, "contrastive", error["replacement"], source_line, target_line, sep="\t")
+                print(target_index, distance, "contrastive", error["replacement"], source_line, target_line, sep="\t")
 
 
 if __name__ == "__main__":
@@ -138,7 +157,8 @@ if __name__ == "__main__":
     parser.add_argument("--dir", "-d", default=os.path.join(BASEDIR, "documents"))
     parser.add_argument("--max-sents", "-ms", type=int, default=0, help="Maximum number of context sentences")
     parser.add_argument("--max-tokens", "-m", type=int, default=0, help="Maximum length in subword tokens")
-    parser.add_argument("--num-before", "-n", type=int, default=None, help="Num sentences previous context")
+    parser.add_argument("--sents-before", "-sb", type=int, default=None, help="Num sentences previous context")
+    parser.add_argument("--tokens-before", "-tb", type=int, default=None, help="Num tokens in previous context")
     parser.add_argument("--separator", default=" <eos> ")
     parser.add_argument("--spm")
     parser.add_argument("--zero", "-0", action="store_true", help="indices are already zeroed (French)")
