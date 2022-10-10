@@ -116,7 +116,7 @@ def print_statistics_by_intrasegmental(results):
     for intrasegmental in sorted(results['by_intrasegmental']):
         correct, total, accuracy = get_scores(results['by_intrasegmental'][intrasegmental])
         if total:
-            print('{0} : {1} {2} {3} '.format(intrasegmental, correct, total, accuracy))
+            print('{0} : {1} {2} {3:.1f} '.format(intrasegmental, correct, total, accuracy * 100))
 
 
 def print_statistics_by_distance(results):
