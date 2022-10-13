@@ -11,7 +11,7 @@ def main(args):
     correct = 0
     total = 0
     for lineno, line in enumerate(sys.stdin, 1):
-        dist, label, pronoun, source, reference, system = line.rstrip().split("\t")
+        target_index, dist, label, pronoun, source, reference, system = line.rstrip().split("\t")
         pronoun = pronoun.lower()
 
         if label != "correct":
@@ -43,7 +43,7 @@ if __name__ == "__main__":
     parser.add_argument("infile", nargs="?", type=argparse.FileType("r"), default=sys.stdin)
     parser.add_argument("--separator", default="<eos>")
     parser.add_argument("--distance", "-d", nargs=2, default=[0, 100], type=int)
-    parser.add_argument("--pronouns", "-p", nargs="+", default=[], choices="all er es sie".split())
+    parser.add_argument("--pronouns", "-p", nargs="+", default=[], choices="all er es sie il ils elle elles".split())
     parser.add_argument("--debug", action="store_true")
     args = parser.parse_args()
 

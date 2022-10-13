@@ -15,7 +15,7 @@ from operator import gt, lt
 import scipy
 import scipy.stats
 
-ALL_PRONOUNS = ["sie", "er", "es"]
+ALL_PRONOUNS = ["sie", "er", "es", "il", "elle", "elles", "ils"]
 
 # usage: python evaluate.py --reference contrapro.json --scores [/path/to/your/scores]
 # by default, lower scores (closer to zero for log-prob) are better
