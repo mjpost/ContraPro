@@ -124,7 +124,7 @@ def main(args):
         def is_too_long(source_doc):
             """Return True if the context + source sentence is too long."""
             length = count_tokens(source_doc)
-            return (args.max_tokens > 0 and length > args.max_tokens) or (args.max_sents > 0 and len(source_doc) - 1 > args.max_sents)
+            return (args.max_tokens is not None and length > args.max_tokens) or (args.max_sents is not None and len(source_doc) - 1 > args.max_sents)
 
         if source and noWS(source) != noWS(sentence["src segment"]):
             print(f"Warning: bad source in", filename, "line", lineno, file=sys.stderr)
