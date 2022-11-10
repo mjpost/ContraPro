@@ -11,7 +11,10 @@ def main(args):
     correct = 0
     total = 0
     for lineno, line in enumerate(sys.stdin, 1):
-        target_index, dist, label, pronoun, source, reference, system = line.rstrip().split("\t")
+        fields = line.rstrip().split("\t")
+        if len(fields) == 7:
+            fields.pop(0)
+        dist, label, pronoun, source, reference, system = fields
         pronoun = pronoun.lower()
 
         if label != "correct":
@@ -26,15 +29,15 @@ def main(args):
         output = tok.tokenize(system.split(args.separator)[-1], return_str=True)
 
         total += 1
-        if pronoun in output.lower().split():
-            if args.debug:
-                print(lineno, pronoun, "in", output, file=sys.stderr)
+        is_correct = pronoun in output.lower().split()
+        if is_correct:
             correct += 1
-        # else:
-        #     print(lineno, "NO", pronoun, "in", output, file=sys.stderr)
+
+        if args.debug:
+            print(lineno, is_correct, pronoun, "in", output, sep="\t", file=sys.stderr)
 
     # print(f"{correct}/{total}={100*correct/total:.1f}")
-    print(f"{100*correct/total:.1f}")
+    print(f"{correct} {total} {100*correct/total:.1f}")
 
 if __name__ == "__main__":
     import argparse
@@ -42,7 +45,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("infile", nargs="?", type=argparse.FileType("r"), default=sys.stdin)
     parser.add_argument("--separator", default="<eos>")
-    parser.add_argument("--distance", "-d", nargs=2, default=[0, 100], type=int)
+    parser.add_argument("--distance", "-d", nargs=2, default=[0, 1000000], type=int)
     parser.add_argument("--pronouns", "-p", nargs="+", default=[], choices="all er es sie il ils elle elles".split())
     parser.add_argument("--debug", action="store_true")
     args = parser.parse_args()

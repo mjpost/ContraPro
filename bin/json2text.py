@@ -73,23 +73,32 @@ def stripread(fh):
     return lines
 
 
+def read_dir_recursive(dir, source, target, remove_ext=False):
+    filenames = {}
+
+    for subfolder in os.listdir(dir):
+        if os.path.isdir(os.path.join(dir, subfolder)):
+            for file_name in os.listdir(os.path.join(dir, subfolder)):
+                if file_name.endswith(f".{source}"):
+                    prefix = file_name[0:-(len(source)+1)]
+                    source_file_path = os.path.abspath(os.path.join(dir, subfolder, file_name))
+                    target_file = f"{prefix}.{target}"
+                    target_file_path = os.path.abspath(os.path.join(dir, subfolder, target_file))
+
+                    key = prefix if remove_ext else target_file
+                    with open(source_file_path) as sfh, open(target_file_path) as tfh:
+                        filenames[key] = (stripread(sfh), stripread(tfh))
+
+    return filenames
+
+
 def main(args):
     spm = None
     if args.spm:
         from sentencepiece import SentencePieceProcessor
         spm = SentencePieceProcessor(model_file=args.spm)
 
-    filenames = {}
-    for subfolder in os.listdir(args.dir):
-        for file_name in os.listdir(os.path.join(args.dir, subfolder)):
-            if file_name.endswith(f".{args.source}"):
-                prefix = file_name[0:-(len(args.source)+1)]
-                target_file = f"{prefix}.{args.target}"
-                s_file = os.path.abspath(os.path.join(args.dir, subfolder, file_name))
-                t_file = os.path.abspath(os.path.join(args.dir, subfolder, target_file))
-
-                with open(s_file) as sfh, open(t_file) as tfh:
-                    filenames[target_file] = (stripread(sfh), stripread(tfh))
+    filenames = read_dir_recursive(args.dir, args.source, args.target)
 
     jsondata = json.load(open(args.json_file))
     # print(f"src-trg sentence pairs = {len(jsondata)}", file=sys.stderr)
