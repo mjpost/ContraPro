@@ -37,7 +37,10 @@ def main(args):
             print(lineno, is_correct, pronoun, "in", output, sep="\t", file=sys.stderr)
 
     # print(f"{correct}/{total}={100*correct/total:.1f}")
-    print(f"{correct} {total} {100*correct/total:.1f}")
+    if args.verbose:
+        print(f"{correct} {total} {100*correct/total:.1f}")
+    else:
+        print(f"{100*correct/total:.1f}")
 
 if __name__ == "__main__":
     import argparse
@@ -48,6 +51,7 @@ if __name__ == "__main__":
     parser.add_argument("--distance", "-d", nargs=2, default=[0, 1000000], type=int)
     parser.add_argument("--pronouns", "-p", nargs="+", default=[], choices="all er es sie il ils elle elles".split())
     parser.add_argument("--debug", action="store_true")
+    parser.add_argument("--verbose", action="store_true")
     args = parser.parse_args()
 
     main(args)
