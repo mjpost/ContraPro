@@ -26,7 +26,17 @@ def main(args):
         if args.pronouns and "all" not in args.pronouns and pronoun not in args.pronouns:
             continue
 
-        output = tok.tokenize(system.split(args.separator)[-1], return_str=True)
+        if args.proportional:
+            # find out what pct the source payload takes in source
+            payload_pct = len(source.split(args.separator)[-1].split()) / len(source.split())
+            # use that to find target range (with a bit of margin)
+            output_len = len(system.split())
+            num_output_tokens = int(output_len * payload_pct * 2)
+            output = tok.tokenize(" ".join(system.split()[-num_output_tokens:]), return_str=True)
+            # print(f"Using {payload_pct*100:.1f}% of output ({num_output_tokens} / {output_len})")
+            # print("->", output)
+        else:
+            output = tok.tokenize(system.split(args.separator)[-1], return_str=True)
 
         total += 1
         is_correct = pronoun in output.lower().split()
@@ -34,7 +44,7 @@ def main(args):
             correct += 1
 
         if args.debug:
-            print(lineno, is_correct, pronoun, "in", output, sep="\t", file=sys.stderr)
+            print(lineno, dist, is_correct, pronoun, "in", output, sep="\t", file=sys.stderr)
 
     # print(f"{correct}/{total}={100*correct/total:.1f}")
     if args.verbose:
@@ -42,11 +52,13 @@ def main(args):
     else:
         print(f"{100*correct/total:.1f}")
 
+
 if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser()
     parser.add_argument("infile", nargs="?", type=argparse.FileType("r"), default=sys.stdin)
+    parser.add_argument("--proportional", action="store_true", help="Instead of splitting on separator, use sentence proportions")
     parser.add_argument("--separator", default="<eos>")
     parser.add_argument("--distance", "-d", nargs=2, default=[0, 1000000], type=int)
     parser.add_argument("--pronouns", "-p", nargs="+", default=[], choices="all er es sie il ils elle elles".split())
