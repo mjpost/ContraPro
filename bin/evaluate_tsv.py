@@ -14,7 +14,12 @@ def main(args):
         fields = line.rstrip().split("\t")
         if len(fields) == 7:
             fields.pop(0)
-        dist, label, pronoun, source, reference, system = fields
+        if len(fields) == 6:
+            dist, label, pronoun, source, reference, system = fields
+        elif len(fields) == 7:
+            dist, label, pronoun, source, reference = fields
+            system = ""
+
         pronoun = pronoun.lower()
 
         if label != "correct":
@@ -31,7 +36,7 @@ def main(args):
             payload_pct = len(source.split(args.separator)[-1].split()) / len(source.split())
             # use that to find target range (with a bit of margin)
             output_len = len(system.split())
-            num_output_tokens = int(output_len * payload_pct * 2)
+            num_output_tokens = int(output_len * payload_pct * 1.5)
             output = tok.tokenize(" ".join(system.split()[-num_output_tokens:]), return_str=True)
             # print(f"Using {payload_pct*100:.1f}% of output ({num_output_tokens} / {output_len})")
             # print("->", output)
