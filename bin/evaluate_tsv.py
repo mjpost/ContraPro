@@ -39,7 +39,11 @@ def main(args):
             # print(f"Using {payload_pct*100:.1f}% of output ({num_output_tokens} / {output_len})")
             # print("->", output)
         else:
-            output = tok.tokenize(system.split(args.separator)[payload_field], return_str=True)
+            # the output might have enough separators
+            try:
+                output = tok.tokenize(system.split(args.separator)[payload_field], return_str=True)
+            except IndexError:
+                output = ""
 
         total += 1
         is_correct = pronoun in output.lower().split()
