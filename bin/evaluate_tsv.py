@@ -12,14 +12,12 @@ def main(args):
     total = 0
     for lineno, line in enumerate(sys.stdin, 1):
         fields = line.rstrip().split("\t")
-        if len(fields) == 7:
-            fields.pop(0)
+        payload_field = -1
         if len(fields) == 6:
             dist, label, pronoun, source, reference, system = fields
         elif len(fields) == 7:
-            dist, label, pronoun, source, reference = fields
-            system = ""
-
+            payload_field, dist, label, pronoun, source, reference, system = fields
+            payload_field = int(payload_field)
         pronoun = pronoun.lower()
 
         if label != "correct":
@@ -41,7 +39,7 @@ def main(args):
             # print(f"Using {payload_pct*100:.1f}% of output ({num_output_tokens} / {output_len})")
             # print("->", output)
         else:
-            output = tok.tokenize(system.split(args.separator)[-1], return_str=True)
+            output = tok.tokenize(system.split(args.separator)[payload_field], return_str=True)
 
         total += 1
         is_correct = pronoun in output.lower().split()
