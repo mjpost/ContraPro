@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import os
 import re
@@ -116,6 +116,14 @@ def main(args):
         lineno = int(sentence["segment id"])
         if not args.zero:
             lineno -= 1
+
+        # used to create a parallel corpus with non-pronoun events
+        lineno += args.offset
+
+        # skip if the line number can't be found
+        if len(filenames[filename][0]) <= lineno:
+            continue
+
         source = filenames[filename][0][lineno].strip("\r\n")
         target = filenames[filename][1][lineno].strip("\r\n")
 
@@ -135,7 +143,7 @@ def main(args):
             length = count_tokens(source_doc)
             return (args.max_tokens is not None and length > args.max_tokens) or (args.max_sents is not None and len(source_doc) - 1 > args.max_sents)
 
-        if source and noWS(source) != noWS(sentence["src segment"]):
+        if not args.offset and source and noWS(source) != noWS(sentence["src segment"]):
             print(f"Warning: bad source in", filename, "line", lineno, file=sys.stderr)
             print("-> file: ", noWS(source), file=sys.stderr)
             print("-> json: ", noWS(sentence["src segment"]), file=sys.stderr)
@@ -164,13 +172,14 @@ if __name__ == "__main__":
     parser.add_argument("--source", "-s", default="en")
     parser.add_argument("--target", "-t", default="de")
     parser.add_argument("--dir", "-d", default=os.path.join(BASEDIR, "documents"))
-    parser.add_argument("--max-sents", "-ms", type=int, default=0, help="Maximum number of context sentences")
-    parser.add_argument("--max-tokens", "-m", type=int, default=0, help="Maximum length in subword tokens")
+    parser.add_argument("--max-sents", "-ms", type=int, default=None, help="Maximum number of context sentences")
+    parser.add_argument("--max-tokens", "-m", type=int, default=None, help="Maximum length in subword tokens")
     parser.add_argument("--sents-before", "-sb", type=int, default=None, help="Num sentences previous context")
     parser.add_argument("--tokens-before", "-tb", type=int, default=None, help="Num tokens in previous context")
-    parser.add_argument("--separator", default=" <eos> ")
+    parser.add_argument("--separator", default=" <eos>")
     parser.add_argument("--spm")
     parser.add_argument("--zero", "-0", action="store_true", help="indices are already zeroed (French)")
+    parser.add_argument("--offset", type=int, default=0, help="Add this number to each segment ID")
     parser.add_argument("--correct-only", action="store_true", help="only output correct lines")
     parser.add_argument("--json-file", "-j", default=os.path.join(BASEDIR, "contrapro.json"))
     args = parser.parse_args()
