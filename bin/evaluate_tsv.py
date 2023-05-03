@@ -6,7 +6,7 @@ from sacremoses import MosesTokenizer
 
 
 def main(args):
-    tok = MosesTokenizer(lang="de")
+    tok = MosesTokenizer(lang=args.lang)
 
     correct = 0
     total = 0
@@ -29,6 +29,10 @@ def main(args):
         if args.pronouns and "all" not in args.pronouns and pronoun not in args.pronouns:
             continue
 
+        # hack for FR, Moses tokenizer doesn't split e.g., "pouvent-elles"
+        if args.lang == "fr":
+            output = system.replace("-", " - ")
+
         if args.proportional:
             # find out what pct the source payload takes in source
             payload_pct = len(source.split(args.separator)[-1].split()) / len(source.split())
@@ -39,7 +43,7 @@ def main(args):
             # print(f"Using {payload_pct*100:.1f}% of output ({num_output_tokens} / {output_len})")
             # print("->", output)
         else:
-            # the output might have enough separators
+            # silently skip imbalanced outputs
             try:
                 output = tok.tokenize(system.split(args.separator)[payload_field], return_str=True)
             except IndexError:
@@ -51,7 +55,7 @@ def main(args):
             correct += 1
 
         if args.debug:
-            print(lineno, dist, is_correct, pronoun, "in", output, sep="\t", file=sys.stderr)
+            print(lineno, dist, is_correct, pronoun, source, system, reference, sep="\t", file=sys.stderr)
 
     # print(f"{correct}/{total}={100*correct/total:.1f}")
     if args.verbose:
@@ -65,6 +69,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("infile", nargs="?", type=argparse.FileType("r"), default=sys.stdin)
+    parser.add_argument("--lang", "-l", default="de")
     parser.add_argument("--proportional", type=float, default=None, help="Instead of splitting on separator, use sentence proportions")
     parser.add_argument("--separator", default="<eos>")
     parser.add_argument("--distance", "-d", nargs=2, default=[0, 1000000], type=int)
